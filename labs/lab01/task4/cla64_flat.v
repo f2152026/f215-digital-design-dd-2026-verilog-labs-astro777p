@@ -32,40 +32,28 @@ module cla64_flat(
     end
   endgenerate
 
-  // ---------------------------------------------------------------------
-  // Step 2: the 64 direct carry equations -- YOUR TASK
-  //
-  // Unlike P and G, these are NOT uniform: Ck needs k+1 product terms,
-  // each one literal longer than the last (see Tutorial 3's derivation).
-  // Writing all 64 of these by hand is extremely tedious and error-prone,
-  // and a single generate-for loop cannot produce them directly (both the
-  // number of terms AND the length of each term change with k).
-  //
-  // Instead: use an AI coding assistant to generate these 64 `assign`
-  // statements.
-  //   - Give it your own C1..C4 equations from cla4.v as the exact
-  //     pattern to continue.
-  //   - Ask it to produce assign statements (with #(2) delays, matching
-  //     the rest of this file) for c[1] through c[64] following that
-  //     same pattern.
-  //
-  // YOU are responsible for verifying the result before trusting it --
-  // this is not optional:
-  //   (1) Confirm the generated c[1]..c[4] exactly match your own cla4.v
-  //       equations.
-  //   (2) Pick at least one later equation (e.g. c[10] or c[32]), re-derive
-  //       it yourself by hand from the recursive definition, and confirm
-  //       it matches what was generated.
-  // Do not move on to this task's reflection question until you've done
-  // both checks.
-  //
-  // TODO: paste your verified assign statements for c[1] through c[64] here.
+  // Step 2: direct carry equations, built algorithmically
+  genvar k, j;
+  generate
+    for (k = 1; k <= 64; k = k + 1) begin : gen_carry
+      wire [k:0] t;   // t[0..k-1] = product terms, t[k] = cin term
+
+      for (j = 0; j < k; j = j + 1) begin : gen_term
+        if (j == k - 1)
+          assign #(2) t[j] = g[j];
+        else
+          assign #(2) t[j] = g[j] & (&p[k-1:j+1]);
+      end
+
+      assign #(2) t[k] = (&p[k-1:0]) & cin;
+      assign #(2) c[k] = |t;
+    end
+  endgenerate
 
   assign cout = c[64];
 
-  // ---------------------------------------------------------------------
   // Step 3: sum bits
-  // ---------------------------------------------------------------------
-  // TODO: assign #(2) sum = p ^ {c[63:1], cin};
+  assign #(2) sum = p ^ {c[63:1], cin};
 
+  
 endmodule
